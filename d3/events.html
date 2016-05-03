@@ -1,6 +1,5 @@
-<!DOCTYPE html>
-<meta charset="utf-8">
-<title>Event viewer</title>
+
+<html>
 <style>
 
 svg {
@@ -11,135 +10,120 @@ svg {
 rect {
   fill: #ddd;
 }
-
-.axis path,
-.axis line {
-  fill: none;
-  stroke: #fff;
-}
-
 </style>
-<body>
-<script src="//d3js.org/d3.v3.min.js"></script>
+
+
+  <body>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <div id='chart' />
+  
 <script>
+var data = [
+{
+  "date": "04/01/2015 10:12",
+  "text": "Event 1"
+}, {
+  "date": "04/10/2015 10:12",
+  "text": "Event 2"
+}, {
+  "date": "04/11/2015 10:30",
+  "text": "Event 3"
+}, {
+  "date": "04/15/2015 18:12",
+  "text": "Event 4"
+},
+{
+  "date": "04/25/2015 15:00",
+  "text": "Event 5"
+}
+  ];
+
+
+var margin = {
+    top: 20,
+    right: 20,
+    bottom: 30,
+    left: 50
+  },
+  width = 900 - margin.left - margin.right,
+  height = 475 - margin.top - margin.bottom;
+
+var colorOf = d3.scale.category10();
+var parseDate = d3.time.format("%m/%d/%Y %H:%M").parse;
+
+var y = d3.scale.ordinal()
+  .rangeRoundBands([height, 0], 0.3);
+
+var x = d3.time.scale()
+  .range([5, width]);
+
+var yAxis = d3.svg.axis()
+  .scale(y)
+  .orient("left");
+
+var xAxis = d3.svg.axis()
+  .scale(x)
+  .orient("bottom");
+
+data.forEach(function(d) {
+      d.date = parseDate(d.date);
+    });
+
+x.domain(d3.extent(data, function(d) { return d.date; }));
+y.domain(data.map(function(d) { return d.text; }));
+
+var zoom = d3.behavior.zoom()
+         .x(x)
+         .scaleExtent([1,20])
+         .on("zoom",zoomed)
 
 var parseDate = d3.time.format("%m/%d/%Y %H:%M").parse;
 
-/*var data;
+var svg = d3.select("div#chart").append("svg")
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+  .call(zoom);
 
-d3.json("events.json", function(error, json) {
-  if (error) throw error;
-  data = json;
-
-  data.nodes.forEach(function(d) {
-      d.date = parseDate(d.date);
-    });
-
- x.domain(d3.extent(data.nodes, function(d) { return d.date; }));
- console.log("Domain X: " + x.domain());
- y.domain(data.nodes.map(function(d) { return d.text; }));
- console.log("Domain Y: " + y.domain());
-});
-*/
-
-var data = {
-  "nodes": [
-    {"date": "05/11/2014 03:12", "text": "Event 1"},
-    {"date": "04/29/2014 10:12", "text": "Event 2"},
-    {"date": "05/01/2014 10:30", "text": "Event 3"},
-    {"date": "05/26/2014 18:12", "text": "Event 4"}
-  ]
-}
-
-data.nodes.forEach(function(d) {
-      d.date = parseDate(d.date);
-    });
-
-var colorOf = d3.scale.category10();
-
-var margin = {top: 50, right: 50, bottom: 30, left: 150},
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
-
-/*var x = d3.time.scale()
-    .domain(d3.extent(data.nodes, function(d) { return d.date; }))
-    .range([0, width]);
-*/
-
-var mindate = new Date(2014,03,15),
-    maxdate = new Date(2015,04,5);
-
-var x = d3.time.scale()
-    .domain([mindate,maxdate])
-    .range([0, width]);
-
-var y = d3.scale.ordinal()
-    .domain(data.nodes.map(function(d) { return d.text; }))
-    .rangeRoundBands([height, 0], 0.3);
-
-var xAxis = d3.svg.axis()
-    .scale(x)
-    .orient("bottom")
-    .ticks(d3.time.month, 1)
-    .tickFormat(d3.time.format('%d %b'))
-    .tickSize(-height);
-
-var yAxis = d3.svg.axis()
-    .scale(y)
-    .orient("left")
-    .tickSize(-width);
-    
-var zoom = d3.behavior.zoom()
-    .x(x)
-    .scaleExtent([1, 32])
-    .on("zoom", draw);
-
-var svg = d3.select("body").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-    .call(zoom);
-
-
- svg.append("rect")
+svg.append("rect")
     .attr("width", width)
     .attr("height", height);
- 
- svg.append("g")
+
+svg.append("g")
     .attr("class", "x axis")
     .attr("transform", "translate(0," + height + ")")
     .call(xAxis);
 
- svg.append("g")
+svg.append("g")
     .attr("class", "y axis")
     .call(yAxis);
 
-svg.selectAll(".event")
-      .data(data.nodes)
-      .enter().append("circle")
-      .attr("r",5)
-      .attr("class","event")
-      .attr("cy", function(d) { return y(d.text); })
-      .attr("cx", function(d) { return x(d.date); })
-      .style("fill", function(d) { return colorOf(d.text); });
+//svg.append("g");
+    //.attr("class","events");
+
+svg.selectAll(".events")
+    .data(data).enter()
+    .append("circle")
+    .attr("class", "event")
+    .attr("text", function(d) {return d.text;} )
+    .attr("r",8)
+    .attr("cy", function(d) { return y(d.text); })
+    .attr("cx", function(d) { return x(d.date); })
+    .style("fill", function(d) { return colorOf(d.text); });
 
 
-function draw() {
+function zoomed() {
+  svg.select("g.x.axis").call(xAxis); 
 
-svg.select(".x.axis").call(xAxis);
-//svg.select(".y.axis").call(yAxis);
-
-svg.selectAll(".event").remove();
-
-svg.selectAll(".event")
-      .data(data.nodes)
-      .enter().append("circle")
-      .attr("r",5)
-      .attr("class","event")
-      .attr("cy", function(d) { return y(d.text); })
-      .attr("cx", function(d) { return x(d.date); })
-      .style("fill", function(d) { return colorOf(d.text); });
+  svg.selectAll("circle")
+    .data(data)
+    .attr("text", function(d) {return d.text;} )
+    .attr("cy", function(d) { return y(d.text); })
+    .attr("cx", function(d) { return x(d.date); });
 }
 
 </script>
+
+</body>
+</html>
